@@ -4,14 +4,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
 import 'package:new_ca_management_app/widgets/customappbar.dart';
 
+import 'services/dbcollection.dart';
+
 final FirebaseAuth _auth = FirebaseAuth.instance;
 FirebaseAuthException authException;
-FirebaseFirestore dbCollection = FirebaseFirestore.instance;
 String clientId;
-String tempPassword = "password";
 AnimationController animationController;
 
-/// Entrypoint example for various sign-in flows with Firebase.
 class CreateNewEmp extends StatefulWidget {
   final String clientId;
   CreateNewEmp(this.clientId);
@@ -173,11 +172,11 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10.0)),
                             onPressed: () async {
-                              setState(() {
-                                creatingUserInProgress = true;
-                              });
                               HapticFeedback.lightImpact();
                               if (_formKey.currentState.validate()) {
+                                setState(() {
+                                  creatingUserInProgress = true;
+                                });
                                 _createNewNonAdminUser();
                               }
                             },
@@ -204,21 +203,13 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
 
   void _createNewNonAdminUser() async {
     try {
-      final User user = (await _auth.createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: tempPassword,
-      ))
-          .user;
-
-      /*dbCollection
-          .collection("UsersCompanyMatchCollection")
-          .doc(user.uid)
-          .set({"companyId": clientId, "name": _nameController.text.trim()});*/
-
       DocumentReference documentReference =
-          dbCollection.collection(clientId).doc("UserDocument");
-
-      documentReference.collection("UserCollection").doc(user.uid).set({
+          dbCollection.collection(clientId).doc("addEmpDocument");
+      documentReference
+          .collection("addEmpCollection")
+          .doc("newusertemplocation")
+          .set({
+        'uniqueCompanyId': clientId,
         'name': _nameController.text.trim(),
         'isAdmin': _isAdmin,
         "email": _emailController.text.trim()
@@ -226,8 +217,7 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
         setState(() {
           creatingUserInProgress = false;
         });
-        resetPassword(
-            _nameController.text.trim(), _emailController.text.trim());
+        // resetPassword(_nameController.text.trim(), _emailController.text.trim());
 
         _formKey.currentState.reset();
         _emailController.clear();
@@ -244,7 +234,6 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
         Navigator.pop(context);*/
       });
     } catch (e) {
-      authException = e;
       setState(() {
         creatingUserInProgress = false;
       });
@@ -252,7 +241,7 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         backgroundColor: Colors.red,
         content: Text(
-          authException.message,
+          e,
           style: TextStyle(color: Colors.white),
         ),
       ));
@@ -281,7 +270,4 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
       ));
     }
   }
-
-  // Example code of how to sign in with email and password.
-
 }

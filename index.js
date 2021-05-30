@@ -8,7 +8,7 @@ const db = admin.firestore();
 
 exports.SendNotificationsToDevice = functions.firestore
     .document("/{CompanyId}/JobDocument/JobCollection/{message}")
-    .onWrite((change, context) => {
+    .onWrite((change) => {
       const previousValue = change.before.data();
       const newValue = change.after.data();
       if (previousValue["employee"] == null) {
@@ -21,7 +21,7 @@ exports.SendNotificationsToDevice = functions.firestore
           });
         });
       } else {
-        const payLoad = {"notification": {"title": "New Job Alert", "body": `Job ${change.after.id} updated`, "clickAction": "FLUTTER_NOTIFICATION_CLICK"}};
+        const payLoad = {"notification": {"title": "Job Update Alert", "body": `Job ${change.after.id} updated`, "clickAction": "FLUTTER_NOTIFICATION_CLICK"}};
         db.collection(change.after.data()["companyId"]).doc("UserDocument").collection("UserCollection").where("name", "in", newValue["employee"]["assignedTo"]).get().then((snapShot)=>{
           snapShot.docs.map((snap) => {
             admin.messaging().sendToDevice(snap.data()["token"], payLoad ).then(() => {
@@ -37,26 +37,9 @@ exports.RemoveUser = functions.firestore.document("/{CompanyId}/UserDocument/Use
   return admin.auth().deleteUser(context.params.uid);
 });
 
-exports.scheduledFunctionCrontab = functions.pubsub.schedule("00 00 * * *")
+exports.scheduledFunctionCheckSubscription = functions.pubsub.schedule("00 00 * * *")
     .timeZone("Asia/Kolkata") // Users can choose timezone - default is America/Los_Angeles
-    .onRun((context) => {
-      db.collection("nithiyasg").doc("Subscription").get().then((snap) => {
-        let subscriptionExpiryIn;
-        if (!snap.exists) {
-          console.log("No Data Found");
-        } else {
-          subscriptionExpiryIn = snap.data()["subscriptionExpiryIn"];
-          if (subscriptionExpiryIn != 0) {
-            db.collection("nithiyasg").doc("Subscription").update({"subscriptionExpiryIn": (subscriptionExpiryIn - 1)}, {merge: true});
-          }
-        }
-      });
-      return null;
-    });
-
-exports.scheduledFunctionAllCollection = functions.pubsub.schedule("38 23 * * *")
-    .timeZone("Asia/Kolkata") // Users can choose timezone - default is America/Los_Angeles
-    .onRun((context) => {
+    .onRun(() => {
       db.listCollections().then( (collections) => {
         for (const collection of collections) {
           db.collection(collection.id).doc("Subscription").get().then((snap) => {
@@ -75,6 +58,30 @@ exports.scheduledFunctionAllCollection = functions.pubsub.schedule("38 23 * * *"
           );
         }
       });
-
       return null;
     });
+
+exports.CreateNewEmp = functions.firestore
+    .document("/{CompanyId}/addEmpDocument/addEmpCollection/{newemp}")
+    .onCreate((change) => {
+      console.log(change.data());
+      admin.auth().createUser({
+        email: change.data()["email"],
+        password: "password",
+        displayName: change.data()["name"],
+      }).then(function(userRecord) {
+        const companyId = change.data()["uniqueCompanyId"];
+        db.collection(companyId).doc("UserDocument").collection("UserCollection").doc(userRecord.uid).set({
+          "uniqueCompanyId": companyId,
+          "email": userRecord.email,
+          "name": userRecord.displayName,
+          "isAdmin": change.data()["isAdmin"],
+        }).then(() => {
+          db.collection(companyId).doc("addEmpDocument").collection("addEmpCollection").doc("newusertemplocation").delete().then((value) => {
+            console.log(value);
+          });
+        });
+      });
+      return null;
+    }
+    );

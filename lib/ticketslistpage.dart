@@ -1,16 +1,16 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:new_ca_management_app/animatedloadingscreen.dart';
 import 'package:new_ca_management_app/checkconnectivity.dart';
 import 'package:new_ca_management_app/createnewclient.dart';
 import 'package:new_ca_management_app/manageclients.dart';
 import 'package:new_ca_management_app/manageusers.dart';
 import 'package:new_ca_management_app/paymentscreen.dart';
 import 'package:new_ca_management_app/services/createnewjobtype.dart';
-
+import "./services/dbcollection.dart";
 import 'package:new_ca_management_app/ticketdetailspage.dart';
 import 'package:new_ca_management_app/widgets/loadingscreen.dart';
 import 'package:provider/provider.dart';
@@ -22,7 +22,7 @@ String sortType = "dueDate";
 bool sortDescending = false;
 bool sort = false;
 
-FirebaseFirestore dbCollection = FirebaseFirestore.instance;
+//FirebaseFirestore dbCollection = FirebaseFirestore.instance;
 final FirebaseAuth _auth = FirebaseAuth.instance;
 
 class TicketListPage extends StatefulWidget {
@@ -50,19 +50,8 @@ class _TicketListPageState extends State<TicketListPage>
   DateFormat dateFormat = DateFormat('dd-MMM-yyyy');
   @override
   void initState() {
-    final fbm = FirebaseMessaging();
-    fbm.requestNotificationPermissions();
-
-    fbm.configure(onMessage: (msg) async {
-      return;
-    }, onLaunch: (msg) {
-      return;
-    }, onResume: (msg) {
-      return;
-    });
     //fbm.subscribeToTopic("newJobCreated");
     super.initState();
-
     Provider.of<CheckInternetConnectivityProvider>(context, listen: false)
         .startMonitoring();
   }
@@ -73,7 +62,14 @@ class _TicketListPageState extends State<TicketListPage>
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
+    final double height = MediaQuery.of(context).size.height;
+    final double width = MediaQuery.of(context).size.width;
+    final Orientation orientation = MediaQuery.of(context).orientation;
+    double aspectRatio = orientation == Orientation.portrait ? 1.2 : 1.5;
+    int gridSize = orientation == Orientation.portrait ? 2 : 3;
+
+    double startHeight = height / 5;
+
     super.build(context);
     return Scaffold(
       appBar: AppBar(
@@ -94,7 +90,6 @@ class _TicketListPageState extends State<TicketListPage>
                             inactiveTrackColor: Colors.redAccent[100],
                             activeColor: Colors.green,
                             onChanged: (value) {
-                              print(viewLeadJob.toString());
                               viewLeadJob = !viewLeadJob;
                               setState(() {});
                             },
@@ -192,10 +187,10 @@ class _TicketListPageState extends State<TicketListPage>
                             padding: EdgeInsets.all(3),
                             gridDelegate:
                                 SliverGridDelegateWithFixedCrossAxisCount(
-                                    childAspectRatio: 1,
-                                    crossAxisCount: 2,
-                                    mainAxisSpacing: 0,
-                                    crossAxisSpacing: 0),
+                                    childAspectRatio: aspectRatio,
+                                    crossAxisCount: gridSize,
+                                    mainAxisSpacing: 5,
+                                    crossAxisSpacing: 5),
                             physics: new BouncingScrollPhysics(
                                 parent: AlwaysScrollableScrollPhysics()),
                             controller: _controller,
@@ -215,7 +210,6 @@ class _TicketListPageState extends State<TicketListPage>
                               final diff =
                                   timestamp.difference(todaydate).inDays;
 
-                              print("Diff:" + diff.toString());
                               final formattedDate =
                                   dateFormat.format(timestamp).toString();
 
@@ -539,7 +533,6 @@ class _TicketListPageState extends State<TicketListPage>
                               final diff =
                                   timestamp.difference(todaydate).inDays;
 
-                              print("Diff:" + diff.toString());
                               final formattedDate =
                                   dateFormat.format(timestamp).toString();
 
@@ -807,9 +800,9 @@ class _TicketListPageState extends State<TicketListPage>
         Container(
           height: 150,
           child: UserAccountsDrawerHeader(
-            decoration: BoxDecoration(color: Colors.green),
+            decoration: BoxDecoration(color: Colors.blue[800]),
             accountName: Text(
-              "${widget.clientId.toUpperCase()} - ${widget.empname}",
+              widget.empname,
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             accountEmail: Text(
@@ -843,7 +836,6 @@ class _TicketListPageState extends State<TicketListPage>
                                 ),
                                 onPressed: () {
                                   HapticFeedback.lightImpact();
-                                  print("Button pressed");
 
                                   createNewJobTypeFn(widget.clientId)
                                       .then((success) {
@@ -879,7 +871,7 @@ class _TicketListPageState extends State<TicketListPage>
         ),
         ListTile(
           leading: Icon(
-            Icons.person_add,
+            Icons.add_business,
           ),
           title: Text(
             "Manage Clients",
@@ -898,7 +890,7 @@ class _TicketListPageState extends State<TicketListPage>
               : null,
         ),
         ListTile(
-          leading: Icon(Icons.edit_outlined),
+          leading: Icon(Icons.person_add),
           title: Text(
             "Manage Users",
             style: TextStyle(color: admin ? Colors.black : Colors.grey),
@@ -915,7 +907,7 @@ class _TicketListPageState extends State<TicketListPage>
               : null,
         ),
         ListTile(
-          leading: Icon(Icons.edit_outlined),
+          leading: Icon(Icons.attach_money),
           title: Text(
             "Payments",
             style: TextStyle(color: admin ? Colors.black : Colors.grey),
@@ -944,16 +936,7 @@ class _TicketListPageState extends State<TicketListPage>
                 ));
                 return;
               } else {
-                signOut(context).then((value) {
-                  if (value) {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      backgroundColor: Colors.blue[800],
-                      content: Text('Successfully signed out',
-                          style: TextStyle(color: Colors.white)),
-                    ));
-                  }
-                });
+                signOut(context);
               }
             }),
       ],
@@ -985,7 +968,7 @@ class _TicketListPageState extends State<TicketListPage>
 */
 
   filterBottomModalSheet(context) {
-    var customModalSheetFilterIcons = Icon(Icons.sort_by_alpha);
+    var customModalSheetFilterIcons = Icon(Icons.sort);
     var customModalSheetSortIcons = Icon(Icons.arrow_circle_up_rounded);
 
     return showModalBottomSheet(

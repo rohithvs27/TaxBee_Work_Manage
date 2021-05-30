@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
+import "./services/dbcollection.dart";
 import 'package:new_ca_management_app/widgets/customappbar.dart';
 
 FirebaseAuthException authException;
-FirebaseFirestore dbCollection = FirebaseFirestore.instance;
 String clientId;
 
 class CreateNewClient extends StatefulWidget {
@@ -152,6 +152,7 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
                   height: 10,
                 ),
                 TextFormField(
+                  maxLength: 12,
                   keyboardType: TextInputType.text,
                   textCapitalization: TextCapitalization.characters,
                   controller: _gstController,
