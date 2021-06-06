@@ -54,8 +54,14 @@ class _ManageUsersState extends State<ManageUsers>
   @override
   Widget build(BuildContext context) {
     Color getColor(Set<MaterialState> color) {
-      return Colors.blue[800];
+      return Colors.white;
     }
+
+    const TextStyle tableHeaderStyle = TextStyle(
+        fontSize: 17,
+        fontFamily: "GoogleFonts",
+        fontWeight: FontWeight.w500,
+        color: Colors.black);
 
     return SafeArea(
         child: Scaffold(
@@ -69,10 +75,11 @@ class _ManageUsersState extends State<ManageUsers>
                 .then((value) => getEmpDetails());
           },
           tooltip: "Add Employee",
-          backgroundColor: Colors.white,
+          foregroundColor: Colors.white,
+          backgroundColor: Colors.blue[800],
           child: Icon(
             Icons.person_add_outlined,
-            color: Colors.green,
+            color: Colors.white,
           )),
       appBar: customAppBar(context, "Manage Users"),
       body: SingleChildScrollView(
@@ -80,12 +87,13 @@ class _ManageUsersState extends State<ManageUsers>
               ? Container(
                   width: double.maxFinite,
                   child: DataTable(
+                      columnSpacing: 80,
                       headingTextStyle: TextStyle(fontSize: 18),
                       dividerThickness: 1,
-                      headingRowHeight: 50,
+                      headingRowHeight: 55,
                       dataRowHeight: 55,
-                      headingRowColor:
-                          MaterialStateProperty.resolveWith(getColor),
+                      // headingRowColor:
+                      //     MaterialStateProperty.resolveWith(getColor),
                       sortAscending: sort,
                       sortColumnIndex: 0,
                       columns: [
@@ -100,21 +108,21 @@ class _ManageUsersState extends State<ManageUsers>
                             label: Expanded(
                               child: Text(
                                 "Name",
-                                style: TextStyle(fontSize: 16),
+                                style: tableHeaderStyle,
                               ),
                             )),
                         DataColumn(
                             label: Expanded(
                           child: Text(
                             "Admin",
-                            style: TextStyle(fontSize: 16),
+                            style: tableHeaderStyle,
                           ),
                         )),
                         DataColumn(
                             label: Expanded(
                           child: Text(
                             "Delete",
-                            style: TextStyle(fontSize: 16),
+                            style: tableHeaderStyle,
                             //style: Theme.of(context).textTheme.headline6,
                           ),
                         ))
@@ -136,7 +144,7 @@ class _ManageUsersState extends State<ManageUsers>
                                           });
                                         },
                                         inactiveThumbColor: Colors.grey,
-                                        activeColor: Colors.green,
+                                        activeColor: Colors.blue[800],
                                       ),
                                     ),
                                     snap['isAdmin']
@@ -274,7 +282,7 @@ class _ManageUsersState extends State<ManageUsers>
                                           });
                                         },
                                         inactiveThumbColor: Colors.grey,
-                                        activeColor: Colors.green,
+                                        activeColor: Colors.blue[800],
                                       ),
                                     ),
                                     snap['isAdmin']

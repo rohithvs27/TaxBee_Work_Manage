@@ -1,9 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-
-FirebaseFirestore dbCollection = FirebaseFirestore.instance;
+import "./services/dbcollection.dart";
 
 class PaymentScreen extends StatefulWidget {
   final clientId;
@@ -27,19 +25,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Razorpay Sample App'),
-        ),
-        body: Center(
-            child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-              MaterialButton(onPressed: openCheckout, child: Text('Open'))
-            ])),
-      ),
-    );
+    return Container();
   }
 
   @override
@@ -91,6 +77,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     Fluttertoast.showToast(
       msg: "ERROR: " + response.code.toString() + " - " + response.message,
     );
+    Navigator.pop(context);
   }
 
   void _handleExternalWallet(ExternalWalletResponse response) {

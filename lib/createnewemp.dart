@@ -147,7 +147,7 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
                                 });
                               },
                               inactiveThumbColor: Colors.grey,
-                              activeColor: Colors.green,
+                              activeColor: Colors.blue[800],
                             ),
                           ),
                         ],

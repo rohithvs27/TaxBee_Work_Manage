@@ -47,8 +47,17 @@ class _ManageClientsState extends State<ManageClients> {
   @override
   Widget build(BuildContext context) {
     Color getColor(Set<MaterialState> color) {
-      return Colors.blue[800];
+      return Colors.white;
     }
+
+    const TextStyle tableHeaderStyle = TextStyle(
+        fontSize: 17,
+        fontFamily: "GoogleFonts",
+        fontWeight: FontWeight.w500,
+        color: Colors.black);
+
+    const TextStyle tableRowStyle = TextStyle(
+        fontSize: 17, fontFamily: "GoogleFonts", fontWeight: FontWeight.w400);
 
     return SafeArea(
         child: Scaffold(
@@ -65,10 +74,10 @@ class _ManageClientsState extends State<ManageClients> {
             });
           },
           tooltip: "Add Client",
-          backgroundColor: Colors.white,
+          backgroundColor: Colors.blue[800],
           child: Icon(
             Icons.person_add_outlined,
-            color: Colors.green,
+            color: Colors.white,
           )),
       appBar: customAppBar(context, "Manage Clients"),
       body: SingleChildScrollView(
@@ -80,8 +89,8 @@ class _ManageClientsState extends State<ManageClients> {
                       dividerThickness: 1,
                       headingRowHeight: 50,
                       dataRowHeight: 55,
-                      headingRowColor:
-                          MaterialStateProperty.resolveWith(getColor),
+                      // headingRowColor:
+                      //     MaterialStateProperty.resolveWith(getColor),
                       sortAscending: sort,
                       sortColumnIndex: 0,
                       columns: [
@@ -93,14 +102,13 @@ class _ManageClientsState extends State<ManageClients> {
                               onSortColumn(columnIndex, ascending);
                             },
                             label: Expanded(
-                              child: Text(
-                                "Name",
-                              ),
+                              child: Text("Name", style: tableHeaderStyle),
                             )),
                         DataColumn(
                             label: Expanded(
                           child: Text(
                             "Manage",
+                            style: tableHeaderStyle,
                           ),
                         )),
                       ],
@@ -110,7 +118,7 @@ class _ManageClientsState extends State<ManageClients> {
                               .map((snap) => DataRow(cells: [
                                     DataCell(Container(
                                       child: Text(snap['data']['name'],
-                                          style: TextStyle(fontSize: 16)),
+                                          style: tableRowStyle),
                                     )),
                                     DataCell(IconButton(
                                       icon: Icon(
@@ -136,7 +144,7 @@ class _ManageClientsState extends State<ManageClients> {
                               .map((snap) => DataRow(cells: [
                                     DataCell(Container(
                                       child: Text(snap['data']['name'],
-                                          style: TextStyle(fontSize: 16)),
+                                          style: tableRowStyle),
                                     )),
                                     DataCell(IconButton(
                                       icon: Icon(

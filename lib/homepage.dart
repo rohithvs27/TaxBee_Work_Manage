@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:new_ca_management_app/createnewjob.dart';
 import 'package:new_ca_management_app/ticketslistpage.dart';
 import 'package:flutter/services.dart';
+import 'package:new_ca_management_app/ticketslistpage_emp.dart';
 import "./services/dbcollection.dart";
 
 import 'paymentscreen.dart';
@@ -35,7 +36,9 @@ class _HomePageState extends State<HomePage> {
   PageController _pageController = PageController();
 
   List<Widget> _screens = [
-    TicketListPage(gadmin, guid, guniqueCompanyId, gempname, gemail),
+    gadmin
+        ? TicketListPage(gadmin, guid, guniqueCompanyId, gempname, gemail)
+        : TicketListPageEmp(gadmin, guid, guniqueCompanyId, gempname, gemail),
     CreateNewJob(guniqueCompanyId, gempname),
   ];
   int _selectedIndex = 0;
@@ -61,10 +64,15 @@ class _HomePageState extends State<HomePage> {
     return SafeArea(
         child: Scaffold(
             bottomNavigationBar: BottomNavigationBar(
+              elevation: 10,
+              selectedLabelStyle: TextStyle(fontSize: 10),
+              iconSize: 20,
               items: const <BottomNavigationBarItem>[
                 BottomNavigationBarItem(
                   label: "Home",
-                  icon: Icon(Icons.home),
+                  icon: Icon(
+                    Icons.home_outlined,
+                  ),
                 ),
                 BottomNavigationBarItem(
                   label: "New Job",
@@ -73,7 +81,8 @@ class _HomePageState extends State<HomePage> {
               ],
               onTap: _onItemTapped,
               currentIndex: _selectedIndex,
-              selectedItemColor: Colors.black,
+              backgroundColor: Colors.white,
+              selectedItemColor: Colors.blue[800],
             ),
             body: checkSubscription(height)));
   }
@@ -103,11 +112,9 @@ class _HomePageState extends State<HomePage> {
           var result = snapShot.data;
           switch (result) {
             case ConnectivityResult.none:
-              print("no net");
               return Center(child: Text("No Internet Connection!"));
             case ConnectivityResult.mobile:
             case ConnectivityResult.wifi:
-              print("yes net");
               return Center(child: checkSubscription(height));
             default:
               return Center(child: Text("No Internet Connection!"));
@@ -123,7 +130,6 @@ class _HomePageState extends State<HomePage> {
               guniqueCompanyId,
             ),
             builder: (context, snapshot) {
-              print(snapshot.data);
               if (!snapshot.hasData) {
                 return Container(
                   height: double.maxFinite,

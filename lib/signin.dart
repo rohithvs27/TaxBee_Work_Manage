@@ -1,17 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
 import 'package:new_ca_management_app/checkconnectivity.dart';
-import 'package:new_ca_management_app/homepage.dart';
-import 'package:new_ca_management_app/ticketslistpage.dart';
 import 'package:new_ca_management_app/widgets/loadingscreen.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'services/savedevicetoken.dart';
+import 'services/newuserregistration.dart';
+import 'services/usersignin.dart';
 
 final FirebaseAuth _auth = FirebaseAuth.instance;
-FirebaseFirestore dbCollection = FirebaseFirestore.instance;
 FirebaseAuthException authException;
 TextStyle snackBarTextStyle = TextStyle(
   color: Colors.white,
@@ -114,7 +110,7 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
                   controller: _companyIdController,
                   textCapitalization: TextCapitalization.words,
                   decoration: InputDecoration(
-                    labelText: 'Company ID',
+                    labelText: 'Company Name',
                     prefixIcon: Icon(
                       Icons.build_outlined,
                       color: Colors.black,
@@ -134,7 +130,7 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
                         textCapitalization: TextCapitalization.words,
                         controller: _nameController,
                         decoration: InputDecoration(
-                          labelText: 'Name',
+                          labelText: 'User Name',
                           prefixIcon: Icon(
                             Icons.person_outline,
                             color: Colors.black,
@@ -313,16 +309,14 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
                                   if (_formKey.currentState.validate()) {
                                     loadingScreen(context);
                                     if (checkConnection.isOnline != null) {
-                                      setState(() {
-                                        isLoading = true;
-                                      });
-                                      _signInWithEmailAndPassword(
-                                              checkConnection.isOnline)
-                                          .then((value) {
-                                        setState(() {
-                                          isLoading = false;
-                                        });
-                                      });
+                                      userSignin(
+                                          _companyIdController.text
+                                              .toLowerCase()
+                                              .replaceAll(" ", "")
+                                              .trim(),
+                                          _emailController.text.trim(),
+                                          _passwordController.text.trim(),
+                                          context);
                                     } else {
                                       return Center(
                                         child:
@@ -361,18 +355,18 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(10.0)),
                                 onPressed: () async {
+                                  loadingScreen(context);
                                   HapticFeedback.lightImpact();
                                   if (_formKey.currentState.validate()) {
-                                    setState(() {
-                                      isLoading = true;
-                                    });
-                                    _createDBCollectionOnRegister()
-                                        .then((value) {
-                                      setState(() {
-                                        isLoading = false;
-                                        _newRegistration = !value;
-                                      });
-                                    });
+                                    createNewClient(
+                                        _emailController.text.trim(),
+                                        _passwordController.text.trim(),
+                                        _nameController.text.trim(),
+                                        _companyIdController.text
+                                            .toLowerCase()
+                                            .replaceAll(" ", "")
+                                            .trim(),
+                                        context);
                                   }
                                 },
                               )
@@ -446,207 +440,6 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
     );
   }
 
-  Future<bool> _signInWithEmailAndPassword(
-      bool internetConnectionStatus) async {
-    bool admin;
-    String empname;
-    User user;
-    if (internetConnectionStatus) {
-      try {
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        await _auth
-            .signInWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
-        )
-            .then((credential) {
-          user = credential.user;
-
-          String companyId = _companyIdController.text
-              .toLowerCase()
-              .replaceAll(" ", "")
-              .trim();
-
-          CollectionReference collectionReference = dbCollection
-              .collection(companyId)
-              .doc('UserDocument')
-              .collection("UserCollection");
-
-          collectionReference.doc(user.uid).get().then((docsnap) => {
-                if (docsnap.exists)
-                  {
-                    saveDeviceToken().then((token) {
-                      //print(docsnap.data());
-                      collectionReference.doc(user.uid).update({
-                        "token": FieldValue.arrayUnion([token])
-                        //"token": token
-                      }).then((value) => {
-                            admin = docsnap.data()['isAdmin'],
-                            empname = docsnap.data()['name'],
-                            prefs.setBool('admin', admin),
-                            prefs.setString('uid', user.uid),
-                            prefs.setString('email', user.email),
-                            prefs.setString('empname', empname),
-                            prefs.setString('clientId', companyId),
-                            prefs.setString('tokenId', token.toString()),
-                            Navigator.pop(context),
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              duration: Duration(seconds: 2),
-                              backgroundColor: Colors.blue[800],
-                              content: Text(
-                                "Signed in successfully",
-                                style: snackBarTextStyle,
-                              ),
-                            )),
-                            admin
-                                ? Navigator.pushReplacement(
-                                    context,
-                                    new MaterialPageRoute(
-                                        builder: (context) =>
-                                            HomePage.withMetaData(
-                                                companyId,
-                                                user.uid,
-                                                admin,
-                                                empname,
-                                                user.email,
-                                                token)))
-                                : Navigator.pushReplacement(
-                                    context,
-                                    new MaterialPageRoute(
-                                        builder: (context) => TicketListPage(
-                                            admin,
-                                            user.uid,
-                                            companyId,
-                                            empname,
-                                            user.email)))
-                          });
-                    })
-                  }
-                else
-                  {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        backgroundColor: Colors.blue[800],
-                        content: Text(
-                          "ClientID & Username/Password do not match. Please try again",
-                          style: snackBarTextStyle,
-                        )))
-                  }
-              });
-        });
-      } catch (e) {
-        authException = e;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            backgroundColor: Colors.blue[800],
-            content: Text(authException.message, style: snackBarTextStyle)));
-        return false;
-      }
-      return true;
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          backgroundColor: Colors.red,
-          content: Text(
-            "No internet connection available",
-            style: snackBarTextStyle,
-          )));
-
-      return false;
-    }
-  }
-
-  Future<bool> _createDBCollectionOnRegister() async {
-    bool success = false;
-    try {
-      DocumentReference documentReference = dbCollection
-          .collection(_companyIdController.text
-              .toLowerCase()
-              .replaceAll(" ", "")
-              .trim())
-          .doc("UserDocument");
-
-      DocumentReference jobReferenceDoc = dbCollection
-          .collection(_companyIdController.text
-              .toLowerCase()
-              .replaceAll(" ", "")
-              .trim())
-          .doc("JobDocument");
-
-      DocumentReference subscriptionRef = dbCollection
-          .collection(_companyIdController.text
-              .toLowerCase()
-              .replaceAll(" ", "")
-              .trim())
-          .doc("Subscription");
-
-      var today = DateTime.now();
-      var subscriptionEndDate = today.add(Duration(days: 7));
-
-      subscriptionRef.set({
-        "trialApplied": true,
-        "subscriptionExpiryIn": 7,
-        "subscriptionStartDate": today,
-        "subscriptionEndDate": subscriptionEndDate
-      });
-
-      documentReference.get().then((doc) => {
-            if (!doc.exists)
-              {
-                _auth
-                    .createUserWithEmailAndPassword(
-                      email: _emailController.text.trim(),
-                      password: _passwordController.text.trim(),
-                    )
-                    .then((user) => {
-                          documentReference.set({}),
-                          jobReferenceDoc.set({}),
-                          documentReference
-                              .collection("UserCollection")
-                              .doc(user.user.uid)
-                              .set({
-                            'name': "Admin User",
-                            'isAdmin': true,
-                            "email": _emailController.text.trim()
-                          }).then((value) => {
-                                    _formKey.currentState.reset(),
-                                    //_emailController.clear(),
-                                    _passwordController.clear(),
-                                    _confirmPasswordController.clear(),
-                                    //_companyIdController.clear(),
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(SnackBar(
-                                      duration: Duration(seconds: 7),
-                                      backgroundColor: Colors.blue[800],
-                                      content: Text(
-                                          "User Registered Successfully. Please SignIn to enjoy 7 days of free trial",
-                                          style: snackBarTextStyle),
-                                    ))
-                                  }),
-                          success = true
-                        }),
-              }
-            else
-              {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  backgroundColor: Colors.blue[800],
-                  content: Text(
-                      "Client ID already in use, Please enter some other ID",
-                      style: snackBarTextStyle),
-                )),
-              }
-          });
-
-      //Navigator.pop(context);
-    } catch (e) {
-      authException = e;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        backgroundColor: Colors.blue[800],
-        content: Text(authException.message, style: snackBarTextStyle),
-      ));
-    }
-    await Future.delayed(Duration(seconds: 2));
-    print(success.toString());
-    return success;
-  }
-
   Future<void> resetPassword(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);
@@ -659,7 +452,6 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
       Navigator.pop(context);
     } catch (e) {
       authException = e;
-      print(authException.message);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
           authException.message,

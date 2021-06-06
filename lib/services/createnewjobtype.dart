@@ -1,7 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-
-FirebaseFirestore dbCollection = FirebaseFirestore.instance;
+import "dbcollection.dart";
 
 final GlobalKey<FormState> _addNewJobTypeKey = GlobalKey<FormState>();
 final TextEditingController _addNewJobTypeController = TextEditingController();
