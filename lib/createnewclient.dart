@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
+import 'package:new_ca_management_app/widgets/loadingscreen.dart';
 import "./services/dbcollection.dart";
 import 'package:new_ca_management_app/widgets/customappbar.dart';
 
@@ -192,40 +193,34 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
                             HapticFeedback.lightImpact();
 
                             if (_clientFormKey.currentState.validate()) {
-                              setState(() {
-                                creatingClientInProgress = true;
-                              });
-                              Future.delayed(Duration(seconds: 2))
-                                  .then((value) async {
-                                await _createNewClientFn()
-                                    .then((clientCreation) {
-                                  if (clientCreation) {
-                                    setState(() {
-                                      creatingClientInProgress = false;
-                                    });
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(SnackBar(
-                                            backgroundColor: Colors.blue[800],
-                                            content: Text(
-                                              "Client ${_nameController.text.trim()} created successfully",
-                                              style: TextStyle(
-                                                  color: Colors.white),
-                                            )));
-                                    resetAllValues();
-                                  } else {
-                                    setState(() {
-                                      creatingClientInProgress = false;
-                                    });
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(SnackBar(
-                                            backgroundColor: Colors.amber,
-                                            content: Text(
-                                              "Error!! Please try again after some time",
-                                              style: TextStyle(
-                                                  color: Colors.black),
-                                            )));
-                                  }
-                                });
+                              loadingScreen(context);
+                              createNewClientFn().then((clientCreation) {
+                                if (clientCreation) {
+                                  setState(() {
+                                    creatingClientInProgress = false;
+                                  });
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(SnackBar(
+                                          backgroundColor: Colors.blue[800],
+                                          content: Text(
+                                            "Client ${_nameController.text.trim()} created successfully",
+                                            style:
+                                                TextStyle(color: Colors.white),
+                                          )));
+                                  resetAllValues();
+                                } else {
+                                  setState(() {
+                                    creatingClientInProgress = false;
+                                  });
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(SnackBar(
+                                          backgroundColor: Colors.amber,
+                                          content: Text(
+                                            "Error!! Please try again after some time",
+                                            style:
+                                                TextStyle(color: Colors.black),
+                                          )));
+                                }
                               });
                             }
                           },
@@ -253,24 +248,15 @@ class _EmailPasswordFormState extends State<_EmailPasswordForm> {
     });
   }
 
-  Future<bool> _createNewClientFn() async {
+  createNewClientFn() async {
     DocumentReference documentReference =
         dbCollection.collection(clientId).doc("ClientsDocument");
 
-    bool success = await documentReference
-        .collection("ClientsCollection")
-        .doc()
-        .set({
-          'name': _nameController.text.trim(),
-          'phone': _phoneController.text.trim(),
-          "email": _emailController.text.trim(),
-          "GST": _gstController.text.trim()
-        })
-        .timeout(Duration(seconds: 2), onTimeout: () => false)
-        .then((value) {
-          return true;
-        });
-
-    return success;
+    await documentReference.collection("ClientsCollection").doc().set({
+      'name': _nameController.text.trim(),
+      'phone': _phoneController.text.trim(),
+      "email": _emailController.text.trim(),
+      "GST": _gstController.text.trim()
+    });
   }
 }
